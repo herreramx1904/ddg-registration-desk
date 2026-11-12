@@ -4,6 +4,7 @@
 // Companies only, never personal names. Canvas + requestAnimationFrame, no libraries.
 import { useEffect, useRef, useState } from "react";
 import type { WallData } from "@/lib/service/wall";
+import { Logo } from "@/components/ui/Logo";
 
 const POLL_MS = 4000;
 const CY = 0.555; // sun centre as a fraction of height (the DOM count overlay uses the same value)
@@ -12,10 +13,18 @@ const TILT = 0.4; // ellipse ry / rx
 const MAX_PLANETS = 60;
 const PALETTE = ["#FB7730", "#826DEC", "#E083E4", "#FF6660", "#C6C2FF", "#F49560"];
 const TAU = Math.PI * 2;
+const SEP = "  ·  ";
+const SLOTS = [0, 1, -1, 2, -2, 3, -3];
 
 interface Planet {
   key: string; name: string; count: number; ring: number; phase: number; color: string;
   r: number; born: number; pulse: number; hidden: boolean;
+  dir: number; side: number; slot: number; slotAt: number; lo: number; // label placement state
+}
+type Box = [number, number, number, number];
+interface Item {
+  p: Planet; x: number; y: number; depth: number; r: number; pulse: number; alpha: number;
+  fs: number; name: string; wName: number; wSep: number; wNum: number; lx: number; ly: number;
 }
 interface Star { x: number; y: number; z: number; r: number; tw: number; ph: number; tint: string }
 interface Comet { key: string; fx: number; fy: number; t0: number; dur: number; trail: { x: number; y: number }[] }
@@ -54,6 +63,7 @@ function widestGap(phases: number[]): number {
 
 export default function GalaxyWall({ wallKey }: { wallKey: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
   const countRef = useRef<HTMLSpanElement>(null);
   const [data, setData] = useState<WallData | null>(null);
   const [caption, setCaption] = useState<{ id: number; text: string } | null>(null);
@@ -136,7 +146,7 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
       if (w.planets.size + fresh.length >= MAX_PLANETS) continue;
       const planet: Planet = {
         key: k, name: c.company, count: c.count, ring: 0, phase: 0, color: PALETTE[hash(k) % PALETTE.length],
-        r: 0, born: t, pulse: -10, hidden: false,
+        r: 0, born: t, pulse: -10, hidden: false, dir: 1, side: Number.NaN, slot: 0, slotAt: 0, lo: 0,
       };
       if (w.loaded) { planet.ring = pickRing(); planet.phase = widestGap(ringPhases(planet.ring)); planet.hidden = !w.reduced; }
       w.planets.set(k, planet);
@@ -168,8 +178,10 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
       w.queue.push(...arrivals.map((a) => a.company));
       if (w.queue.length > 4) w.queue = w.queue.slice(-4);
     }
-    // Reveal brand-new planets that are not waiting for a comet
-    for (const p of fresh) if (!w.queue.some((c) => keyOf(c) === p.key)) { p.hidden = false; p.born = t; }
+    // Reveal hidden planets no longer waiting for a comet (e.g. trimmed from a busy queue)
+    for (const p of w.planets.values()) {
+      if (p.hidden && !w.queue.some((c) => keyOf(c) === p.key) && !w.comets.some((c) => c.key === p.key)) { p.hidden = false; p.born = t; }
+    }
   }, [data]);
 
   // Arrival queue: one launch + welcome caption at a time
@@ -258,6 +270,17 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
         }
       }
 
+      // --- brand clear space: nothing but the star field may enter the logo box (the Logo component's
+      // rendered box already includes the brand clear space), so planets, glows, comets and bursts are clipped out of it.
+      ctx.save();
+      const lr = logoRef.current?.getBoundingClientRect();
+      if (lr && lr.width > 0) {
+        ctx.beginPath();
+        ctx.rect(0, 0, W, H);
+        ctx.rect(lr.left, lr.top, lr.width, lr.height);
+        ctx.clip("evenodd");
+      }
+
       // --- geometry
       const k = Math.max(0.55, Math.min(1.4, Math.min(W / 1920, H / 1080)));
       const cx = W / 2, cy = H * CY;
@@ -280,18 +303,61 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
         return { x: cx + rx * Math.cos(a), y: cy + rx * TILT * Math.sin(a), depth: (Math.sin(a) + 1) / 2 };
       };
 
-      const drawPlanet = (p: Planet) => {
-        if (p.hidden) return;
-        const { x, y, depth } = pos(p);
+      // Layout pass: planet geometry, then labels placed front-first so they avoid planets,
+      // the count, the title/footer and each other (sticky slots, smooth slides, no flicker).
+      const items: Item[] = [];
+      for (const p of w.planets.values()) {
+        if (p.hidden) continue;
         const fade = still ? 1 : Math.max(0, Math.min(1, (t - p.born) / 0.8));
-        if (fade <= 0) return;
+        if (fade <= 0) continue;
+        const { x, y, depth } = pos(p);
         const target = k * Math.min(26, 6 + 4.6 * Math.sqrt(p.count));
         p.r = still || !p.r ? target : p.r + (target - p.r) * Math.min(1, dt * 3);
-        const s = 0.8 + 0.25 * depth;
+        const sc = 0.8 + 0.25 * depth;
         const pulse = still ? 0 : Math.max(0, 1 - (t - p.pulse) / 1.6);
-        const r = p.r * s * (1 + 0.35 * pulse);
-        const alpha = fade * (0.6 + 0.4 * depth);
+        const r = p.r * sc * (1 + 0.35 * pulse);
+        const fs = Math.round(k * (15 + Math.min(p.count, 6) * 1.4) * sc);
+        ctx.font = `${fs}px ${font}`;
+        const name = short(p.name);
+        items.push({
+          p, x, y, depth, r, pulse, fs, name, alpha: fade * (0.6 + 0.4 * depth),
+          wName: ctx.measureText(name).width, wSep: ctx.measureText(SEP).width, wNum: ctx.measureText(String(p.count)).width,
+          lx: 0, ly: y,
+        });
+      }
+      const vmin = Math.min(W, H) / 100;
+      const boxes: Box[] = items.map((i) => [i.x - i.r, i.y - i.r, i.x + i.r, i.y + i.r]);
+      boxes.push([cx - sunR * 0.8, cy - sunR * 0.8, cx + sunR * 0.8, cy + sunR * 0.8]); // the count
+      boxes.push([cx - 42 * vmin, 0, cx + 42 * vmin, 13 * vmin]); // title
+      boxes.push([cx - 20 * vmin, H - 4.5 * vmin, cx + 20 * vmin, H]); // footer
+      if (W >= 1024) {
+        boxes.push([0, H - 21 * vmin, 26 * vmin, H]); // "Just arrived"
+        boxes.push([W - 46 * vmin, H - 7.5 * vmin, W, H]); // companies in orbit
+      }
+      const hit = (b: Box) => boxes.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+      for (const it of [...items].sort((a, b) => b.depth - a.depth || b.p.count - a.p.count)) {
+        const p = it.p;
+        const total = it.wName + it.wSep + it.wNum;
+        const gap = it.r + 10 * k;
+        if (it.x > cx + 24 * k) p.dir = 1; else if (it.x < cx - 24 * k) p.dir = -1;
+        if (p.dir < 0 && it.x - gap - total < 8) p.dir = 1;
+        else if (p.dir > 0 && it.x + gap + total > W - 8) p.dir = -1;
+        p.side = still || Number.isNaN(p.side) ? p.dir : p.side + (p.dir - p.side) * Math.min(1, dt * 5);
+        const u = (p.side + 1) / 2; // 0 = label left of the planet, 1 = right
+        it.lx = (it.x - gap - total) * (1 - u) + (it.x + gap) * u;
+        const lh = it.fs * 1.3;
+        const box = (slot: number): Box => [it.lx - 4, it.y + slot * lh - lh / 2, it.lx + total + 4, it.y + slot * lh + lh / 2];
+        let slot = p.slot;
+        if (slot !== 0 && t - p.slotAt > 1.2 && !hit(box(0))) slot = 0;
+        else if (hit(box(slot))) slot = SLOTS.find((sl) => !hit(box(sl))) ?? 0;
+        if (slot !== p.slot) { p.slot = slot; p.slotAt = t; }
+        boxes.push(box(slot));
+        p.lo = still ? slot * lh : p.lo + (slot * lh - p.lo) * Math.min(1, dt * 6);
+        it.ly = it.y + p.lo;
+      }
 
+      const drawItem = (it: Item) => {
+        const { p, x, y, r, pulse, alpha, depth } = it;
         ctx.globalAlpha = alpha;
         const glow = ctx.createRadialGradient(x, y, 0, x, y, r * (3.2 + pulse * 2));
         glow.addColorStop(0, `${p.color}88`); glow.addColorStop(1, `${p.color}00`);
@@ -306,28 +372,26 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
           ctx.beginPath(); ctx.ellipse(x, y, r * 1.75, r * 0.5, -0.35, 0, TAU); ctx.stroke();
         }
 
-        // label "Company · n"
-        const fs = Math.round(k * (15 + Math.min(p.count, 6) * 1.4) * s);
-        ctx.font = `${fs}px ${font}`;
-        ctx.textBaseline = "middle";
-        const name = short(p.name), sep = "  ·  ", num = String(p.count);
-        const wName = ctx.measureText(name).width, wSep = ctx.measureText(sep).width, wNum = ctx.measureText(num).width;
-        const total = wName + wSep + wNum;
-        const right = x >= cx;
-        const lx = right ? x + r + 10 * k : x - r - 10 * k - total;
+        // label "Company · n" (+ a faint leader line when nudged off the planet's row)
+        const total = it.wName + it.wSep + it.wNum;
         ctx.globalAlpha = alpha * (0.75 + 0.25 * depth);
+        if (Math.abs(it.ly - y) > 3) {
+          const ax = it.lx > x ? it.lx - 3 : it.lx + total + 3;
+          ctx.strokeStyle = "rgba(198,194,255,0.35)"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(x + Math.sign(ax - x) * r, y); ctx.lineTo(ax, it.ly); ctx.stroke();
+        }
+        ctx.font = `${it.fs}px ${font}`;
+        ctx.textBaseline = "middle";
         ctx.shadowColor = "rgba(5,3,13,0.9)"; ctx.shadowBlur = 6;
-        ctx.fillStyle = "#ffffff"; ctx.fillText(name, lx, y);
-        ctx.fillStyle = "rgba(198,194,255,0.8)"; ctx.fillText(sep, lx + wName, y);
-        ctx.fillStyle = "#FB7730"; ctx.fillText(num, lx + wName + wSep, y);
+        ctx.fillStyle = "#ffffff"; ctx.fillText(it.name, it.lx, it.ly);
+        ctx.fillStyle = "rgba(198,194,255,0.8)"; ctx.fillText(SEP, it.lx + it.wName, it.ly);
+        ctx.fillStyle = "#FB7730"; ctx.fillText(String(p.count), it.lx + it.wName + it.wSep, it.ly);
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       };
 
-      const planets = [...w.planets.values()];
-      const back = planets.filter((p) => pos(p).depth < 0.5).sort((a, b) => pos(a).depth - pos(b).depth);
-      const front = planets.filter((p) => pos(p).depth >= 0.5).sort((a, b) => pos(a).depth - pos(b).depth);
-      back.forEach(drawPlanet);
+      const byDepth = [...items].sort((a, b) => a.depth - b.depth);
+      byDepth.filter((i) => i.depth < 0.5).forEach(drawItem);
 
       // --- the sun
       const breathe = still ? 1 : 1 + 0.025 * Math.sin(t * 0.9);
@@ -357,7 +421,7 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
       ctx.strokeStyle = "rgba(255,220,200,0.35)"; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
 
-      front.forEach(drawPlanet);
+      byDepth.filter((i) => i.depth >= 0.5).forEach(drawItem);
 
       // --- comets
       w.comets = w.comets.filter((c) => {
@@ -400,6 +464,7 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
         ctx.globalAlpha = 1;
         return true;
       });
+      ctx.restore(); // end of the logo clear-space clip
     };
     raf = requestAnimationFrame(frame);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
@@ -495,6 +560,11 @@ export default function GalaxyWall({ wallKey }: { wallKey: string }) {
       <footer className="pointer-events-none absolute inset-x-0 bottom-[1.6vmin] text-center uppercase tracking-[0.35em] text-white/55" style={{ fontSize: "clamp(10px, 1.3vmin, 18px)" }}>
         Run by DDG Europe<span className="text-ddg-orange">.</span>
       </footer>
+      {/* DDG Europe logo: white version on a dark background, brand clear space reserved by the component.
+          The canvas clips planets/comets out of this box (see render loop) so the clear space stays empty. */}
+      <div ref={logoRef} className="pointer-events-none absolute left-[1.2vmin] top-[1.2vmin]">
+        <Logo variant="aura" tone="light" size="lg" />
+      </div>
 
       {lost && (
         <div className="absolute right-[2vmin] top-[2vmin] flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/50">

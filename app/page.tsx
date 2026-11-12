@@ -115,7 +115,7 @@ export default function LoginPage() {
           }}
         />
         <OrbitArt />
-        <Logo tone="light" size="md" />
+        <Logo variant="aura" tone="light" size="lg" />
         <div className="mt-14 lg:mt-0">
           <p className="mb-3 text-xs uppercase tracking-[0.22em] text-white/85">StellarX AI presents</p>
           <Heading as="h1" size="display" className="text-white">

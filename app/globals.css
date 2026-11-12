@@ -115,8 +115,14 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid #826dec;
+  outline: 2px solid #fb7730;
   outline-offset: 2px;
+}
+/* Form fields show focus with their own border, not a second ring */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
 }
 
 /* Brand helpers */

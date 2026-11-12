@@ -40,7 +40,7 @@ function Invalid() {
   return (
     <Shell>
       <div className="rounded-3xl bg-white p-6 text-center shadow-ddg-lg">
-        <Logo size="md" label="Tickets" />
+        <Logo variant="aura" size="md" />
         <h1 className="ddg-heading mt-6 text-2xl">
           Ticket not valid<span className="text-ddg-orange">.</span>
         </h1>
@@ -71,7 +71,7 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
       <article className="overflow-hidden rounded-3xl bg-white shadow-ddg-lg" aria-label="Event ticket">
         <header className="px-6 pb-5 pt-6">
           <div className="flex items-start justify-between gap-3">
-            <Logo size="sm" label="Ticket" />
+            <Logo variant="stacked" size="sm" />
             <span className="rounded-full bg-ddg-cream px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-ddg-orange-dark">
               Admit one
             </span>

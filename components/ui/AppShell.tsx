@@ -54,10 +54,9 @@ export function AppShell({ area, staff, nav, actions, top, width = "narrow", chi
   return (
     <div className="flex min-h-dvh flex-col bg-ddg-soft">
       <header className="sticky top-0 z-40 border-b border-ddg-line bg-white/90 backdrop-blur-md">
-        <div className="h-1 w-full bg-ddg-gradient" aria-hidden />
         <div className={cx("mx-auto flex h-14 w-full items-center gap-3 px-4", container)}>
           <Link href="/" aria-label="Home" className="shrink-0">
-            <Logo size="sm" label={null} />
+            <Logo variant="wordmark" size="sm" />
           </Link>
           <span className="rounded-full bg-ddg-orange px-2.5 py-0.5 text-[11px] uppercase tracking-[0.16em] text-white">
             {area}

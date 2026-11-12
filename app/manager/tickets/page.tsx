@@ -2,10 +2,8 @@
 // Manager > Tickets (T7). Ticket links per guest: open, show QR, reissue, CSV export.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  AppShell, Badge, Button, Card, EmptyState, Heading, IconQr, Modal, SearchInput, Spinner, buttonClasses, useToast,
+  Badge, Button, Card, EmptyState, Heading, IconQr, Modal, SearchInput, Spinner, buttonClasses, useToast,
 } from "@/components/ui";
-import { managerNav } from "@/components/manager/nav";
-import { ManagerAlerts } from "@/components/alerts/ManagerAlerts";
 import { QrCode } from "@/components/qr/QrCode";
 
 interface Ticket {
@@ -99,7 +97,7 @@ export default function TicketsPage() {
   }
 
   return (
-    <AppShell area="Manager" staff={staff} nav={managerNav} top={<ManagerAlerts />} width="wide">
+    <div>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
@@ -199,6 +197,6 @@ export default function TicketsPage() {
       >
         <p className="text-sm text-ddg-ink">Use this when a ticket is lost or was shared by mistake. Send the guest the new link.</p>
       </Modal>
-    </AppShell>
+    </div>
   );
 }
