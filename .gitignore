@@ -11,3 +11,9 @@ node_modules/
 out/
 *.tsbuildinfo
 .DS_Store
+/coverage
+/build
+next-env.d.ts
+*.pem
+npm-debug.log*
+.vercel
