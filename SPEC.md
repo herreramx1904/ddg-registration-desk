@@ -29,12 +29,15 @@ One web app on Vercel, with these areas:
 
   After a successful check-in the screen shows a short welcome and returns to search automatically. A visible Undo is offered.
 
+  **VIP** and **accessibility** guests (e.g. wheelchair user, step-free route) get a prominent warning banner on the card *before* check-in: VIP means "greet personally / call the host"; accessibility shows the need and the route.
+
   When a guest has a status, the desk sees:
   - **Cancelled**: staff confirm entry.
   - **Do not admit**: a manager must authorise.
 
   The desk also has a live counter and a short walk-in form; walk-ins wait for a manager's approval.
 - **Manager** (manager PIN):
+  - **live Arrivals page**: who has checked in, when, at which desk and by whom, with VIP / accessibility / press / walk-in badges, filters and counts by guest type. **Alerts** appear when a VIP or a guest with accessibility needs arrives, so a host can go and meet them.
   - import the client's Excel (original rows kept, important fields cleaned)
   - **review duplicate suggestions** and confirm or reject same-person links
   - guest table with raw and clean values side by side
@@ -58,7 +61,7 @@ The QR code holds only a random token. Excel rows are never deleted. **Two regis
 
 | Tier | Features |
 |---|---|
-| **Must (build first, in this order)** | Website + secure PIN access · Excel upload + cleaning of important fields · Guest search · QR scan + check-in · Double check-in prevention (database-enforced) · Cancelled / Do-not-admit handling + Undo · Walk-ins + manager approval · Live counter · Duplicate review (confirm links) · Simple client Excel report · Audit log + desk data minimisation |
+| **Must (build first, in this order)** | Website + secure PIN access · Excel upload + cleaning of important fields · Guest search · QR scan + check-in · Double check-in prevention (database-enforced) · Cancelled / Do-not-admit handling + Undo · **VIP & accessibility warnings (desk) + arrival alerts (manager)** · Walk-ins + manager approval · Live counter · **Manager live Arrivals page** · Duplicate review (confirm links) · Simple client Excel report · Audit log + desk data minimisation |
 | **Next (keep simple)** | Ticket email preview (Outbox) · CSV of ticket links · Guest ticket page with QR |
 | **Later / last** | Real "send to me" email · Galaxy Wall · Cleaned-Excel download · Safe re-import that merges into existing data |
 
@@ -102,6 +105,9 @@ Wall work starts only after the Must tier has been tested end to end on a real p
 27. As desk staff, I want a USB scanner (which types like a keyboard) to work in the search bar, so that a laptop desk can scan fast.
 28. As desk staff, I want search by name or company that ignores accents and case, so that I find guests without a QR.
 29. As desk staff, I want the guest card to show only name, company, type and action flags (VIP, accessibility, allergy, plus-one, breakout, possible substitute), so that I can act instantly.
+29a. As desk staff, I want a VIP guest's card to show a prominent purple VIP warning with the instruction from the notes (e.g. "greet personally, ask the host"), so that no VIP is treated like a normal arrival.
+29b. As desk staff, I want a guest with accessibility needs (e.g. wheelchair user) to show a prominent warning with what they need (e.g. step-free route), so that we help them straight away.
+29c. As desk staff, I want the VIP and accessibility warnings to also appear in search results and right after a QR scan, so that I see them before pressing CHECK IN.
 30. As desk staff, I want a big CHECK IN button that shows a short welcome and then returns to search automatically, so that I'm ready for the next guest.
 31. As desk staff, I want a visible Undo after check-in, so that a wrong tap is corrected immediately.
 32. As desk staff, I want scanning either ticket of an already-admitted person to show "Already checked in at HH:MM by NAME", so that nobody gets in twice.
@@ -123,6 +129,10 @@ Wall work starts only after the Must tier has been tested end to end on a real p
 
 ### Must: Oversight and report
 46. As a manager, I want a guest table I can filter (checked in, not yet, cancelled, do not admit, VIP, duplicate suggestions, walk-ins), so that I can handle problems during the arrival.
+46a. As a manager, I want a live Arrivals page listing who has checked in (newest first, with time, desk staff and badges: VIP, accessibility, press, speaker, walk-in, cancelled-but-admitted), so that I always know who is in the building.
+46b. As a manager, I want counts on the Arrivals page by guest type (e.g. VIPs 9/16 arrived, press 5/8) and a list of VIPs still expected, so that I know who we are still waiting for.
+46c. As a manager, I want an alert on my screen when a VIP or a guest with accessibility needs checks in, which I can mark "handled" (logged), so that a host meets them at the door.
+46d. As a manager, I want to filter the Arrivals page (VIP, accessibility, press, walk-ins, not yet arrived), so that I can focus on the guests who need attention.
 47. As a manager, I want an audit log of every import, check-in, undo, override, link decision, approval and export (who, what, when), so that every action is traceable.
 48. As a manager, I want a simple client Excel report: attended, no-shows, walk-ins (approved and rejected), exceptions (cancelled-but-attended, overrides), with confirmed duplicates counted once and internal staff counted separately, so that the client gets accurate numbers the day after.
 49. As the client, I want the original rows included in the report, so that I can check DDG's interpretation.
@@ -156,6 +166,11 @@ Wall work starts only after the Must tier has been tested end to end on a real p
   - Check-ins attach to the **person**, so either ticket admits them, once.
 - **Double check-in prevention (database-enforced)**: a unique constraint allows at most one *active* (not undone) check-in per person. Check-in is a single insert. If the constraint rejects it, the service returns "already checked in" with the existing time and staff name. Both desks therefore show the correct result, whatever the polling interval.
 - **Admission status** per person: `registered`, `cancelled` (desk may confirm, logged) or `do_not_admit` (manager override only, logged). Notes saying "cancelled" map to `cancelled`. Only a manager sets `do_not_admit`.
+- **Warnings and alerts**:
+  - Flags come with a severity. *Warning* flags are VIP (from the guest type or from a note) and accessibility; they show as a banner on the desk card, in search results and after a scan.
+  - *Info* flags (allergy, plus-one, breakout, possible substitute) show as small badges.
+  - Checking in a person with a warning flag creates an **arrival alert** (person, flag, time, desk staff). It shows on the manager screens until a manager marks it handled (logged).
+- **Arrivals page** (manager): a feed of active check-ins and approved walk-ins plus aggregate counts by type, polled like the other screens. Unlike the desk, managers can open a guest's full record from it.
 - **Expected count** excludes cancelled and do-not-admit people. Internal staff are reported separately.
 - **Modules**:
   - **Import pipeline** (pure, no I/O): workbook bytes in; registrations (raw, clean, flags, generated-ID marker), duplicate suggestions with strength and reason, and an import report out. Never merges or drops rows.
@@ -192,6 +207,8 @@ Wall work starts only after the Must tier has been tested end to end on a real p
   - two concurrent check-ins for one person: exactly one succeeds, the other gets "already checked in"
   - cancelled needs a desk confirm; do-not-admit refuses desk staff and accepts a manager override; both are logged
   - walk-in pending → approved or rejected
+  - VIP and accessibility guests carry warning flags in the desk view; checking them in creates an arrival alert, and marking it handled clears it
+  - arrivals and counts by type reflect check-ins, undos and approved walk-ins
   - re-import refused once check-ins exist
   - report numbers (confirmed duplicates once, internal separate, exceptions listed)
   - desk views contain no phone or email
