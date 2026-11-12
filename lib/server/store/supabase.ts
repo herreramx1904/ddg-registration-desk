@@ -120,7 +120,7 @@ export class SupabaseStore implements Store {
   async getSuggestion(id: string) { const d = must(await this.db.from("duplicate_suggestions").select("*").eq("id", id).maybeSingle()); return d ? sug(d) : null; }
   async decideSuggestion(id: string, d: "confirmed" | "rejected", staff: string) {
     const r = must(await this.db.from("duplicate_suggestions").update({ decision: d, decided_by: staff, decided_at: new Date().toISOString() })
-      .eq("id", id).select().maybeSingle());
+      .eq("id", id).eq("decision", "pending").select().maybeSingle()); // only the first decision wins
     return r ? sug(r) : null;
   }
 

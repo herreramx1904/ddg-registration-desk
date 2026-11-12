@@ -60,7 +60,7 @@ export class MemoryStore implements Store {
   async listSuggestions() { return [...this.suggestions]; }
   async getSuggestion(id: string) { return this.suggestions.find((s) => s.id === id) ?? null; }
   async decideSuggestion(id: string, d: "confirmed" | "rejected", staff: string) {
-    const s = this.suggestions.find((x) => x.id === id); if (!s) return null;
+    const s = this.suggestions.find((x) => x.id === id && x.decision === "pending"); if (!s) return null;
     s.decision = d; s.decidedBy = staff; s.decidedAt = this.now(); return s;
   }
 
