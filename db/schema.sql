@@ -132,7 +132,7 @@ begin
   if exists (select 1 from checkins) then
     raise exception 'IMPORT_BLOCKED_CHECKINS_EXIST';
   end if;
-  delete from alerts; delete from duplicate_suggestions; delete from registrations; delete from people;
+  delete from alerts where true; delete from duplicate_suggestions where true; delete from registrations where true; delete from people where true;
   insert into imports(staff, file_name, report) values (p_staff, p_file_name, p_report) returning id into v_import;
   for r in select * from jsonb_array_elements(p_registrations) loop
     insert into people(status) values (coalesce(r->>'status','registered')) returning id into v_person;
