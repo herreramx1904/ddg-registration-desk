@@ -61,7 +61,7 @@ The QR code holds only a random token. Excel rows are never deleted. **Two regis
 
 | Tier | Features |
 |---|---|
-| **Must (build first, in this order)** | Website + secure PIN access · Excel upload + cleaning of important fields · Guest search · QR scan + check-in · Double check-in prevention (database-enforced) · Cancelled / Do-not-admit handling + Undo · **VIP & accessibility warnings (desk) + arrival alerts (manager)** · Walk-ins + manager approval · Live counter · **Manager live Arrivals page** · Duplicate review (confirm links) · Simple client Excel report · Audit log + desk data minimisation |
+| **Must (build first, in this order)** | Website + secure PIN access · Excel upload + cleaning of important fields · Guest search · QR scan + check-in · Double check-in prevention (database-enforced) · Cancelled / Do-not-admit handling + Undo · **VIP & accessibility warnings + "Call manager" button (desk) → alerts (manager)** · Walk-ins + manager approval · Live counter · **Manager live Arrivals page** · Duplicate review (confirm links) · Simple client Excel report · Audit log + desk data minimisation |
 | **Next (keep simple)** | Ticket email preview (Outbox) · CSV of ticket links · Guest ticket page with QR |
 | **Later / last** | Real "send to me" email · Galaxy Wall · Cleaned-Excel download · Safe re-import that merges into existing data |
 
@@ -107,6 +107,9 @@ Wall work starts only after the Must tier has been tested end to end on a real p
 29. As desk staff, I want the guest card to show only name, company, type and action flags (VIP, accessibility, allergy, plus-one, breakout, possible substitute), so that I can act instantly.
 29a. As desk staff, I want a VIP guest's card to show a prominent purple VIP warning with the instruction from the notes (e.g. "greet personally, ask the host"), so that no VIP is treated like a normal arrival.
 29b. As desk staff, I want a guest with accessibility needs (e.g. wheelchair user) to show a prominent warning with what they need (e.g. step-free route), so that we help them straight away.
+29d. As desk staff, I want a **"Call manager"** button on the warning banner that instantly alerts all managers (guest, reason, my name, time), so that I can get help for a VIP or a guest with accessibility needs without leaving the desk or the queue.
+29e. As desk staff, I want to see when a manager has picked up my call ("Anna is coming"), so that I can tell the guest help is on its way.
+29f. As desk staff, I want the "Call manager" button available on any guest card, not only on warning ones, so that I can get help with any difficult situation.
 29c. As desk staff, I want the VIP and accessibility warnings to also appear in search results and right after a QR scan, so that I see them before pressing CHECK IN.
 30. As desk staff, I want a big CHECK IN button that shows a short welcome and then returns to search automatically, so that I'm ready for the next guest.
 31. As desk staff, I want a visible Undo after check-in, so that a wrong tap is corrected immediately.
@@ -170,6 +173,8 @@ Wall work starts only after the Must tier has been tested end to end on a real p
   - Flags come with a severity. *Warning* flags are VIP (from the guest type or from a note) and accessibility; they show as a banner on the desk card, in search results and after a scan.
   - *Info* flags (allergy, plus-one, breakout, possible substitute) show as small badges.
   - Checking in a person with a warning flag creates an **arrival alert** (person, flag, time, desk staff). It shows on the manager screens until a manager marks it handled (logged).
+  - **Help calls**: the desk's "Call manager" button creates an alert of kind *help call* (person, reason, desk staff, time). Alerts have the states `open` → `acknowledged` (manager name, shown back on the desk as "NAME is coming") → `handled`. Every step is logged.
+  - Managers see open alerts at the top of every manager screen, newest first, with a short sound or vibration when supported.
 - **Arrivals page** (manager): a feed of active check-ins and approved walk-ins plus aggregate counts by type, polled like the other screens. Unlike the desk, managers can open a guest's full record from it.
 - **Expected count** excludes cancelled and do-not-admit people. Internal staff are reported separately.
 - **Modules**:
@@ -208,6 +213,7 @@ Wall work starts only after the Must tier has been tested end to end on a real p
   - cancelled needs a desk confirm; do-not-admit refuses desk staff and accepts a manager override; both are logged
   - walk-in pending → approved or rejected
   - VIP and accessibility guests carry warning flags in the desk view; checking them in creates an arrival alert, and marking it handled clears it
+  - a desk help call goes open → acknowledged (manager name visible to the desk) → handled
   - arrivals and counts by type reflect check-ins, undos and approved walk-ins
   - re-import refused once check-ins exist
   - report numbers (confirmed duplicates once, internal separate, exceptions listed)
