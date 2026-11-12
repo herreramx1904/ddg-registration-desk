@@ -1,0 +1,13 @@
+# secrets
+.env*
+# guest data never goes in git
+*.xlsx
+*.xls
+*.csv
+# build
+node_modules/
+.next/
+.vercel/
+out/
+*.tsbuildinfo
+.DS_Store
