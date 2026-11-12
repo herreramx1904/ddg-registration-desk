@@ -157,7 +157,7 @@ Wall work starts only after the Must tier has been tested end to end on a real p
 
 ## Implementation Decisions
 
-- **Stack**: Next.js (App Router) and TypeScript on Vercel (Hobby). Supabase Postgres in Frankfurt (eu-central-1). Resend only for the Later "send to me" email. Vitest for unit tests. Screens poll about every 3 seconds; correctness never depends on polling.
+- **Stack**: Next.js (App Router) and TypeScript on Vercel (Hobby). Supabase Postgres in the EU (eu-west-1, Ireland). Resend only for the Later "send to me" email. Vitest for unit tests. Screens poll about every 3 seconds; correctness never depends on polling.
 - **Auth**: desk and manager PINs held only in environment variables. A successful login sets a signed, httpOnly session cookie holding the role and the staff member's name. Every server action checks the role. Failed logins are rate-limited per IP.
 - **Data access**: only the server talks to Supabase, using the secret key. Row-Level Security is on for every table with no public policies.
 - **Registration vs person**:

@@ -162,11 +162,19 @@ export class SupabaseStore implements Store {
   }
 }
 
+class NoopWebSocket {
+  constructor() { throw new Error("Realtime is not used in this app"); }
+}
+
 let cached: Store | null = null;
 export function getStore(): Store {
   if (cached) return cached;
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw new Error("SUPABASE_URL / SUPABASE_SECRET_KEY not configured");
-  cached = new SupabaseStore(createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }));
+  cached = new SupabaseStore(createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    // We never use Realtime. Node 20 has no native WebSocket, so give realtime-js a never-used transport.
+    realtime: { transport: NoopWebSocket as never },
+  }));
   return cached;
 }
