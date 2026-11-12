@@ -41,6 +41,12 @@ The client merged two exports and added rows by hand. The import **keeps every o
 - The guest Excel file and secrets are **never in git** (`.gitignore`). Data lives in the EU (Supabase eu-west-1).
 - Retention policy (stated): delete guest data 30 days after the client report.
 
+## Design
+
+- **Brand**: the DDG Europe logo is built from the exact vector artwork in the brand book (letters and the "EUROPE." ring), used only in the allowed colours (orange, berry→orange gradient, white) with its clear space reserved by the component. Headings end with the orange full stop; the logo never does.
+- **Desk**: one screen, large targets, status in words and colour, built for a queue.
+- **Manager**: a compact operations console (KPIs, "needs attention", dense tables, side drawer with the original row next to the cleaned one and the guest's audit history). Orange marks brand and active state; green/amber/red/blue/purple are semantic only.
+
 ## Stack
 
 Next.js 16 + TypeScript on Vercel · Supabase Postgres (EU) · exceljs · libphonenumber-js · qrcode / qr-scanner · Vitest.
