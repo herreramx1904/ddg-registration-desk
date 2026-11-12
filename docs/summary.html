@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DDG Registration Desk: App Summary</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  :root{
+    --o:#fb7730; --od:#f15401; --p:#826dec; --pl:#c6c2ff; --berry:#ab365a;
+    --ink:#2f2f2f; --mut:#767676; --line:#e7e3df; --soft:#f8f6f4; --cream:#fff4ec;
+    --ok:#16a34a; --warn:#d97706; --danger:#dc2626; --vip:#6d4fe0; --acc:#0369a1;
+    --grad:linear-gradient(135deg,#fb7730 0%,#f15401 38%,#ab365a 70%,#826dec 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{width:297mm;height:210mm;padding:10mm 13mm 12mm;position:relative;overflow:hidden;page-break-after:always;display:flex;flex-direction:column;gap:4.5mm}
+  .page:last-child{page-break-after:auto}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid transparent;border-image:var(--grad) 1;padding-bottom:3mm}
+  h1{font-size:25px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+  h1 span,h2 span{color:var(--o)}
+  .sub{font-size:12px;color:var(--mut);margin-top:2px}
+  .tag{font-size:11px;color:#fff;background:var(--grad);padding:5px 11px;border-radius:999px;font-weight:600}
+  h2{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3mm}
+  .muted{color:var(--mut)}
+
+  /* architecture */
+  .arch{display:grid;grid-template-columns:1fr 26px 1.55fr 26px 1fr;align-items:stretch;gap:0}
+  .col{display:flex;flex-direction:column;gap:3mm}
+  .box{border:1.5px solid var(--line);border-radius:10px;padding:3mm 3.5mm;background:#fff}
+  .box h3{font-size:11.5px;font-weight:700;margin-bottom:1.2mm}
+  .box p{font-size:10px;color:var(--mut);line-height:1.35}
+  .lane{border-radius:12px;padding:3mm;display:flex;flex-direction:column;gap:2.5mm}
+  .lane .lbl{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+  .l-client{background:var(--cream)} .l-client .lbl{color:var(--od)}
+  .l-server{background:#f3f1ff} .l-server .lbl{color:var(--vip)}
+  .l-data{background:#eef6fb} .l-data .lbl{color:var(--acc)}
+  .arrow{display:flex;align-items:center;justify-content:center}
+  .arrow svg{width:26px;height:40px}
+  .inner{display:grid;grid-template-columns:1fr 1fr;gap:2.5mm}
+  .chip{display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:999px;background:var(--soft);border:1px solid var(--line);margin:1px 2px 1px 0;white-space:nowrap}
+  .chip.o{background:var(--cream);border-color:#fbd3bb;color:var(--od)}
+  .chip.p{background:#f0edff;border-color:var(--pl);color:var(--vip)}
+  .chip.b{background:#e6f1f8;border-color:#b9d8ea;color:var(--acc)}
+  .chip.g{background:#e8f6ed;border-color:#b6e2c4;color:var(--ok)}
+  .lock{font-size:9.5px;color:var(--danger);font-weight:700}
+
+  /* stack */
+  .stack{display:grid;grid-template-columns:repeat(6,1fr);gap:3mm}
+  .st{border-radius:10px;padding:3mm;border-top:4px solid var(--o);background:var(--soft)}
+  .st:nth-child(2){border-color:var(--od)} .st:nth-child(3){border-color:var(--berry)}
+  .st:nth-child(4){border-color:var(--p)} .st:nth-child(5){border-color:var(--acc)} .st:nth-child(6){border-color:var(--ok)}
+  .st .k{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+  .st .v{font-size:12.5px;font-weight:700;margin:1mm 0}
+  .st .d{font-size:9.5px;color:var(--mut);line-height:1.35}
+
+  /* steps */
+  .steps{display:flex;gap:0;align-items:stretch}
+  .step{flex:1;position:relative;padding:2.6mm 2.4mm;background:var(--soft);border-radius:10px;margin-right:5mm}
+  .step:last-child{margin-right:0}
+  .step:not(:last-child)::after{content:"";position:absolute;right:-4.6mm;top:50%;transform:translateY(-50%);border:7px solid transparent;border-left:9px solid var(--o)}
+  .num{width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;margin-bottom:1.6mm}
+  .step b{font-size:11.5px;display:block;margin-bottom:.8mm}
+  .step span{font-size:9.6px;color:var(--mut);line-height:1.35;display:block}
+  .step.p .num{background:var(--p)}
+  .step.p:not(:last-child)::after{border-left-color:var(--p)}
+
+  /* components */
+  .areas{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm}
+  .area{border-radius:12px;border:1.5px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+  .area .hd{padding:2.5mm 3.5mm;color:#fff}
+  .area .hd b{font-size:13px;display:block}
+  .area .hd code{font-size:9.5px;opacity:.9}
+  .area ul{list-style:none;padding:2.5mm 3.5mm;display:flex;flex-direction:column;gap:1.2mm}
+  .area li{font-size:10px;line-height:1.3;padding-left:11px;position:relative}
+  .area li::before{content:"";position:absolute;left:0;top:4px;width:5px;height:5px;border-radius:50%;background:var(--o)}
+  .bot{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:4mm;flex:1}
+  .panel{background:var(--soft);border-radius:12px;padding:3.5mm}
+  .panel h2{margin-bottom:2.5mm;font-size:11.5px}
+  .tbls{display:grid;grid-template-columns:repeat(3,1fr);gap:1.8mm}
+  .tbl{background:#fff;border:1px solid var(--line);border-radius:7px;padding:1.6mm 2mm;font-size:9.8px}
+  .tbl b{display:block;font-size:10.2px;font-family:ui-monospace,Menlo,monospace;color:var(--acc)}
+  .tbl.key{border:1.5px solid var(--ok);background:#f2fbf5}
+  .tbl.key b{color:var(--ok)}
+  .g{display:flex;gap:2.5mm;align-items:flex-start;margin-bottom:2.2mm}
+  .g .ic{flex:0 0 20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px}
+  .g div{font-size:10px;line-height:1.35}
+  .g div b{display:block;font-size:10.8px}
+  .mods{display:flex;flex-direction:column;gap:1.6mm}
+  .mod{display:flex;gap:2mm;font-size:9.8px;align-items:baseline}
+  .mod code{flex:0 0 auto;font-family:ui-monospace,Menlo,monospace;font-size:9.5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--vip)}
+  .foot{position:absolute;bottom:5mm;left:13mm;right:13mm;display:flex;justify-content:space-between;font-size:9px;color:var(--mut)}
+  .split{display:grid;grid-template-columns:5fr 6fr;gap:6mm}
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1: STACK + ARCHITECTURE + STEPS ================= -->
+<section class="page">
+  <div class="top">
+    <div>
+      <h1>DDG Registration Desk<span>.</span></h1>
+      <div class="sub">OrbitBot Galaxy launch · Kraftverket, Oslo · 3 Dec 2026 · ~150 guests, one every ~18 s at peak</div>
+    </div>
+    <div class="tag">Stack · Steps · Components</div>
+  </div>
+
+  <div>
+    <h2>The stack<span>.</span></h2>
+    <div class="stack">
+      <div class="st"><div class="k">Frontend</div><div class="v">Next.js 16 + React 19</div><div class="d">App Router, TypeScript, Tailwind v4 with the DDG UI kit</div></div>
+      <div class="st"><div class="k">Backend</div><div class="v">Next.js API routes</div><div class="d">Server-only service layer, PIN sessions in signed cookies</div></div>
+      <div class="st"><div class="k">Database</div><div class="v">Supabase Postgres</div><div class="d">EU (Ireland), Row-Level Security on, no public access</div></div>
+      <div class="st"><div class="k">Hosting</div><div class="v">Vercel</div><div class="d">Live URL, env secrets, deploy from GitHub</div></div>
+      <div class="st"><div class="k">Libraries</div><div class="v">Excel · phone · QR</div><div class="d">exceljs, libphonenumber-js, qrcode, qr-scanner</div></div>
+      <div class="st"><div class="k">Quality</div><div class="v">Vitest + DB check</div><div class="d">Service and import tests, 10 parallel check-ins → 1 admitted</div></div>
+    </div>
+  </div>
+
+  <div>
+    <h2>How it fits together<span>.</span></h2>
+    <div class="arch">
+      <div class="lane l-client">
+        <div class="lbl">Devices (browser)</div>
+        <div class="box"><h3>Desk phones</h3><p>Search, scan QR, check in</p></div>
+        <div class="box"><h3>Manager laptop</h3><p>Arrivals, review, report</p></div>
+        <div class="box"><h3>Guest phone · Venue screen</h3><p>Ticket QR · Galaxy wall</p></div>
+        <div class="lock">Never talks to the database directly</div>
+      </div>
+      <div class="arrow"><svg viewBox="0 0 26 40"><path d="M2 20h18" stroke="#fb7730" stroke-width="3"/><path d="M16 12l8 8-8 8" fill="none" stroke="#fb7730" stroke-width="3"/></svg></div>
+      <div class="lane l-server">
+        <div class="lbl">Next.js on Vercel (server)</div>
+        <div class="inner">
+          <div class="box"><h3>Pages</h3><p><span class="chip o">/desk</span><span class="chip o">/manager/*</span><span class="chip o">/t/[token]</span><span class="chip o">/wall/[key]</span></p></div>
+          <div class="box"><h3>API routes</h3><p><span class="chip p">/api/auth</span><span class="chip p">/api/desk</span><span class="chip p">/api/manager</span><span class="chip p">/api/wall</span></p></div>
+          <div class="box"><h3>Gatekeeper</h3><p>requireRole("desk" | "manager"), PIN rate limit, audit every action</p></div>
+          <div class="box"><h3>Services</h3><p><span class="chip">checkin</span><span class="chip">import</span><span class="chip">duplicates</span><span class="chip">walkins</span><span class="chip">alerts</span><span class="chip">report</span><span class="chip">wall</span></p></div>
+        </div>
+        <div class="box"><h3>Store interface</h3><p>One contract for all data access: Supabase in production, in-memory store in tests</p></div>
+      </div>
+      <div class="arrow"><svg viewBox="0 0 26 40"><path d="M2 20h18" stroke="#826dec" stroke-width="3"/><path d="M16 12l8 8-8 8" fill="none" stroke="#826dec" stroke-width="3"/></svg></div>
+      <div class="lane l-data">
+        <div class="lbl">Supabase Postgres (EU)</div>
+        <div class="box"><h3>Secret key, server only</h3><p>RLS on every table, zero public policies</p></div>
+        <div class="box" style="border-color:var(--ok)"><h3 style="color:var(--ok)">Unique index</h3><p>One active check-in per person. The database blocks double admission.</p></div>
+        <div class="box"><h3>Original rows kept</h3><p>Raw + cleaned values side by side, nothing auto-merged</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div>
+      <h2>Event day, 5 steps<span>.</span></h2>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><b>Upload Excel</b><span>Keep every row, clean key fields</span></div>
+        <div class="step"><div class="num">2</div><b>Review duplicates</b><span>Manager confirms or rejects</span></div>
+        <div class="step"><div class="num">3</div><b>Guest arrives</b><span>Scan QR or search name</span></div>
+        <div class="step"><div class="num">4</div><b>Check in</b><span>Once per person, live counter</span></div>
+        <div class="step"><div class="num">5</div><b>Report</b><span>.xlsx for the client</span></div>
+      </div>
+    </div>
+    <div>
+      <h2>How it was built<span>.</span></h2>
+      <div class="steps">
+        <div class="step p"><div class="num">1</div><b>Grill</b><span>Q&amp;A on scope, privacy, data</span></div>
+        <div class="step p"><div class="num">2</div><b>Spec</b><span>SPEC.md, Must / Next / Later</span></div>
+        <div class="step p"><div class="num">3</div><b>Tickets</b><span>13 vertical slices on GitHub</span></div>
+        <div class="step p"><div class="num">4</div><b>Contracts</b><span>Types, schema, store, check-in</span></div>
+        <div class="step p"><div class="num">5</div><b>Agent team</b><span>Parallel slices, own files</span></div>
+        <div class="step p"><div class="num">6</div><b>Verify</b><span>Tests, DB race, phone, deploy</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>ddg-registration-desk.vercel.app</span><span>1 / 2</span></div>
+</section>
+
+<!-- ================= PAGE 2: COMPONENTS ================= -->
+<section class="page">
+  <div class="top">
+    <div>
+      <h1>Components<span>.</span></h1>
+      <div class="sub">Four areas, one app. Every area has its own access level.</div>
+    </div>
+    <div class="tag">What the app contains</div>
+  </div>
+
+  <div class="areas">
+    <div class="area">
+      <div class="hd" style="background:var(--od)"><b>Desk</b><code>/desk · desk PIN</code></div>
+      <ul>
+        <li>Big search (ignores accents and case)</li>
+        <li>QR scanner button</li>
+        <li>Guest card + 72px CHECK IN</li>
+        <li>Welcome message + Undo</li>
+        <li>VIP / wheelchair banners</li>
+        <li>Call manager button</li>
+        <li>Walk-in form</li>
+        <li>Live counter</li>
+      </ul>
+    </div>
+    <div class="area">
+      <div class="hd" style="background:var(--berry)"><b>Manager</b><code>/manager · manager PIN</code></div>
+      <ul>
+        <li>Live Arrivals + alerts</li>
+        <li>Guests: raw vs cleaned</li>
+        <li>Walk-in approvals</li>
+        <li>Duplicate review</li>
+        <li>Tickets: QR + CSV links</li>
+        <li>Excel import</li>
+        <li>Client report (.xlsx)</li>
+        <li>Do-not-admit override</li>
+      </ul>
+    </div>
+    <div class="area">
+      <div class="hd" style="background:var(--p)"><b>Guest ticket</b><code>/t/[token] · public link</code></div>
+      <ul>
+        <li>Personal QR code</li>
+        <li>Random 128-bit token</li>
+        <li>No personal data in the QR</li>
+        <li>Can be reissued</li>
+      </ul>
+    </div>
+    <div class="area">
+      <div class="hd" style="background:var(--acc)"><b>Galaxy wall</b><code>/wall/[key] · secret link</code></div>
+      <ul>
+        <li>Big-screen animation</li>
+        <li>Arriving companies</li>
+        <li>Live count</li>
+        <li>No guest names</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bot">
+    <div class="panel">
+      <h2>Database tables<span>.</span></h2>
+      <div class="tbls">
+        <div class="tbl"><b>imports</b>Each Excel upload</div>
+        <div class="tbl"><b>registrations</b>Raw row + cleaned fields</div>
+        <div class="tbl"><b>people</b>One real person</div>
+        <div class="tbl"><b>duplicate_suggestions</b>Strong / medium / weak</div>
+        <div class="tbl key"><b>checkins</b>Max 1 active per person</div>
+        <div class="tbl"><b>walkins</b>Wait for approval</div>
+        <div class="tbl"><b>alerts</b>VIP, access, help calls</div>
+        <div class="tbl"><b>audit_log</b>Every action</div>
+        <div class="tbl"><b>login_attempts</b>PIN rate limit</div>
+      </div>
+      <div style="margin-top:3mm;font-size:9.8px" class="muted">Many registrations can point to one person. Check-in is per person, so a confirmed duplicate is admitted once.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Code building blocks<span>.</span></h2>
+      <div class="mods">
+        <div class="mod"><code>lib/domain</code>Shared types (the contract)</div>
+        <div class="mod"><code>lib/import</code>Parse, clean, flag, suggest duplicates</div>
+        <div class="mod"><code>lib/service</code>Check-in, walk-ins, alerts, report, wall</div>
+        <div class="mod"><code>lib/server/store</code>Supabase + in-memory store</div>
+        <div class="mod"><code>lib/server/session</code>PIN roles, signed cookie</div>
+        <div class="mod"><code>components/ui</code>DDG design kit</div>
+        <div class="mod"><code>components/desk · qr</code>Desk screen, scanner, QR</div>
+        <div class="mod"><code>db/</code>Schema, migrate, reset, race test</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Built-in guarantees<span>.</span></h2>
+      <div class="g"><div class="ic" style="background:var(--ok)">1</div><div><b>Never admit twice</b>Enforced by the database, even with two desks at once</div></div>
+      <div class="g"><div class="ic" style="background:var(--acc)">2</div><div><b>Desk sees the minimum</b>No phone, email, raw rows or manager notes</div></div>
+      <div class="g"><div class="ic" style="background:var(--vip)">3</div><div><b>Nothing is lost</b>Original rows kept, merges only by a manager</div></div>
+      <div class="g"><div class="ic" style="background:var(--warn)">4</div><div><b>Accurate client numbers</b>Duplicates once, staff apart, exceptions listed</div></div>
+      <div class="g"><div class="ic" style="background:var(--danger)">5</div><div><b>Private by default</b>EU data, no guest file in git, full audit trail</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Next: QR in confirmation email · self check-in kiosk · badge printing · safe re-import</span><span>2 / 2</span></div>
+</section>
+</body>
+</html>

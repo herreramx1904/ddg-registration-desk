@@ -62,7 +62,7 @@ export function Modal({
       className={cx("fixed inset-0 z-50 flex justify-center", sheet ? "items-end sm:items-center" : "items-center p-4")}
     >
       <div
-        className="animate-fade-in absolute inset-0 bg-[#2a2140]/55 backdrop-blur-[2px]"
+        className="animate-fade-in absolute inset-0 bg-ddg-ink/40"
         onClick={() => dismissible && onClose()}
         aria-hidden
       />
@@ -72,17 +72,17 @@ export function Modal({
         aria-modal="true"
         tabIndex={-1}
         className={cx(
-          "relative flex max-h-[92dvh] w-full flex-col bg-white shadow-ddg-lg outline-none",
+          "relative flex max-h-[92dvh] w-full flex-col border border-ddg-line bg-white outline-none",
           widths[size],
           sheet
-            ? "animate-sheet-in rounded-t-3xl sm:animate-pop sm:rounded-3xl"
-            : "animate-pop rounded-3xl",
+            ? "animate-sheet-in rounded-t-xl sm:animate-pop sm:rounded-xl"
+            : "animate-pop rounded-xl",
         )}
       >
         {sheet && <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-ddg-line sm:hidden" aria-hidden />}
-        <div className="flex items-start gap-3 px-5 pb-2 pt-4 sm:px-6 sm:pt-6">
+        <div className="flex items-start gap-3 border-b border-ddg-line px-4 pb-3 pt-4 sm:px-5">
           <div className="min-w-0 flex-1">
-            <Heading as="h2" size="lg">
+            <Heading as="h2" size="md">
               {title}
             </Heading>
             {description && <p className="mt-1 text-sm text-ddg-muted">{description}</p>}
@@ -92,15 +92,15 @@ export function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full text-ddg-muted hover:bg-ddg-soft hover:text-ddg-ink"
+              className="-mr-1 grid size-9 shrink-0 place-items-center rounded-md text-ddg-muted hover:bg-ddg-soft hover:text-ddg-ink"
             >
-              <IconClose size={22} />
+              <IconClose size={20} />
             </button>
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3 sm:px-6">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">{children}</div>
         {footer && (
-          <div className="flex flex-col-reverse gap-2 border-t border-ddg-line px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:justify-end sm:px-6 sm:pb-5">
+          <div className="flex flex-col-reverse gap-2 border-t border-ddg-line px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:justify-end sm:px-5 sm:pb-4">
             {footer}
           </div>
         )}

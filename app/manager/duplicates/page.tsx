@@ -1,61 +1,72 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Badge, Button, Card, EmptyState, Heading, Spinner, StatTile, cx, useToast, type BadgeVariant } from "@/components/ui";
+import {
+  Badge, Button, Heading, Section, Spinner, Table, cx, useToast, type BadgeVariant, type Column,
+} from "@/components/ui";
 import type { DuplicateSide, DuplicateView } from "@/lib/service/duplicates";
 
 interface Counts { strong: number; medium: number; weak: number; pending: number; decided: number }
 
 const strengthBadge: Record<DuplicateView["strength"], BadgeVariant> = { strong: "danger", medium: "warn", weak: "neutral" };
-const strengthAccent = { strong: "danger", medium: "warn", weak: "none" } as const;
+const strengthWord: Record<DuplicateView["strength"], string> = { strong: "Strong match", medium: "Medium match", weak: "Weak match" };
 const statusLabel = { registered: "Registered", cancelled: "Cancelled", do_not_admit: "Do not admit" } as const;
 
 const time = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const norm = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
+const name = (x: DuplicateSide) => `${x.firstName} ${x.lastName}`;
+const checkinText = (s: DuplicateSide) => (s.checkedIn ? `Checked in ${time(s.checkedIn.at)} (${s.checkedIn.staff})` : "Not checked in");
 
-function Row({ label, a, b, same }: { label: string; a: ReactNode; b: ReactNode; same: boolean }) {
-  const cell = cx("min-w-0 break-words rounded-lg px-2 py-1.5 text-sm", same ? "bg-ok-soft text-ok-strong" : "bg-ddg-soft");
-  return (
-    <>
-      <p className="col-span-2 mt-2 text-[11px] uppercase tracking-[0.14em] text-ddg-muted">
-        {label} {same && <span className="normal-case tracking-normal text-ok-strong">· match</span>}
-      </p>
-      <div className={cell}>{a ?? <span className="text-ddg-muted">–</span>}</div>
-      <div className={cell}>{b ?? <span className="text-ddg-muted">–</span>}</div>
-    </>
-  );
-}
+interface Field { label: string; a: ReactNode; b: ReactNode; same: boolean }
 
-function checkinText(s: DuplicateSide) {
-  return s.checkedIn ? `In at ${time(s.checkedIn.at)} (${s.checkedIn.staff})` : "Not checked in";
+/** Only the fields worth a decision: matching ones (evidence) and differing ones (doubt). Empty-on-both are skipped. */
+function fields(s: DuplicateView): Field[] {
+  const { a, b } = s;
+  const all: (Field & { empty: boolean })[] = [
+    { label: "Name", a: name(a), b: name(b), same: norm(name(a)) === norm(name(b)), empty: false },
+    { label: "Company", a: a.company, b: b.company, same: !!a.company && norm(a.company) === norm(b.company), empty: !a.company && !b.company },
+    { label: "Type", a: a.guestType, b: b.guestType, same: a.guestType === b.guestType, empty: false },
+    { label: "Email", a: a.email, b: b.email, same: !!a.email && norm(a.email) === norm(b.email), empty: !a.email && !b.email },
+    { label: "Mobile", a: a.mobile, b: b.mobile, same: !!a.mobile && a.mobile === b.mobile, empty: !a.mobile && !b.mobile },
+    { label: "Status", a: statusLabel[a.personStatus], b: statusLabel[b.personStatus], same: a.personStatus === b.personStatus, empty: false },
+    { label: "Check-in", a: checkinText(a), b: checkinText(b), same: false, empty: false },
+  ];
+  return all.filter((f) => !f.empty);
 }
 
 function Compare({ s }: { s: DuplicateView }) {
   const { a, b } = s;
   const rawKeys = [...new Set([...Object.keys(a.raw), ...Object.keys(b.raw)])];
-  const name = (x: DuplicateSide) => `${x.firstName} ${x.lastName}`;
   return (
-    <>
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-        <p className="ddg-heading text-sm">{a.regId} <span className="text-ddg-muted">· row {a.rowNumber}</span></p>
-        <p className="ddg-heading text-sm">{b.regId} <span className="text-ddg-muted">· row {b.rowNumber}</span></p>
-        <Row label="Name" a={name(a)} b={name(b)} same={norm(name(a)) === norm(name(b))} />
-        <Row label="Company" a={a.company} b={b.company} same={!!a.company && norm(a.company) === norm(b.company)} />
-        <Row label="Type" a={a.guestType} b={b.guestType} same={a.guestType === b.guestType} />
-        <Row label="Email" a={a.email} b={b.email} same={!!a.email && norm(a.email) === norm(b.email)} />
-        <Row label="Mobile" a={a.mobile} b={b.mobile} same={!!a.mobile && a.mobile === b.mobile} />
-        <Row label="Status" a={statusLabel[a.personStatus]} b={statusLabel[b.personStatus]} same={a.personStatus === b.personStatus} />
-        <Row label="Check-in" a={checkinText(a)} b={checkinText(b)} same={false} />
+    <div className="text-sm">
+      <div className="grid grid-cols-[5rem_1fr_1fr] sm:grid-cols-[8rem_1fr_1fr] gap-x-2 border-b border-ddg-line pb-1.5 text-xs text-ddg-muted">
+        <span>Field</span>
+        <span className="tabular">{a.regId} <span className="hidden sm:inline">· row {a.rowNumber}</span></span>
+        <span className="tabular">{b.regId} <span className="hidden sm:inline">· row {b.rowNumber}</span></span>
       </div>
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-ddg-muted">Original rows (unchanged)</summary>
-        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+      {fields(s).map((f) => (
+        <div key={f.label} className="grid grid-cols-[5rem_1fr_1fr] sm:grid-cols-[8rem_1fr_1fr] gap-x-2 border-b border-ddg-line py-1.5 last:border-b-0">
+          <span className="text-ddg-muted">
+            {f.label}
+            {f.same && <span className="block text-xs text-ok-strong sm:ml-1 sm:inline">· same</span>}
+          </span>
+          <span className={cx("min-w-0 break-words", !f.same && "text-ddg-ink")}>{f.a ?? <span className="text-ddg-muted">–</span>}</span>
+          <span className={cx("min-w-0 break-words", !f.same && "text-ddg-ink")}>{f.b ?? <span className="text-ddg-muted">–</span>}</span>
+        </div>
+      ))}
+      <details className="mt-2">
+        <summary className="cursor-pointer text-xs text-ddg-muted hover:text-ddg-ink">Original rows (unchanged)</summary>
+        <div className="mt-1">
           {rawKeys.map((k) => (
-            <Row key={k} label={k} a={a.raw[k]} b={b.raw[k]} same={!!a.raw[k] && norm(a.raw[k]) === norm(b.raw[k])} />
+            <div key={k} className="grid grid-cols-[5rem_1fr_1fr] sm:grid-cols-[8rem_1fr_1fr] gap-x-2 border-b border-ddg-line py-1 text-xs last:border-b-0">
+              <span className="truncate text-ddg-muted" title={k}>{k}</span>
+              <span className="min-w-0 break-words">{a.raw[k] ?? <span className="text-ddg-muted">–</span>}</span>
+              <span className="min-w-0 break-words">{b.raw[k] ?? <span className="text-ddg-muted">–</span>}</span>
+            </div>
           ))}
         </div>
       </details>
-    </>
+    </div>
   );
 }
 
@@ -99,70 +110,67 @@ export default function DuplicatesPage() {
   const pending = data?.suggestions.filter((s) => s.decision === "pending") ?? [];
   const decided = data?.suggestions.filter((s) => s.decision !== "pending") ?? [];
 
+  const decidedColumns: Column<DuplicateView>[] = [
+    {
+      key: "decision", header: "Decision",
+      render: (s) => <Badge variant={s.decision === "confirmed" ? "ok" : "neutral"}>{s.decision === "confirmed" ? "Linked" : "Different people"}</Badge>,
+    },
+    {
+      key: "pair", header: "Registrations",
+      render: (s) => (
+        <span className="min-w-0 break-words">
+          {name(s.a)} <span className="tabular text-ddg-muted">({s.a.regId})</span> + {name(s.b)} <span className="tabular text-ddg-muted">({s.b.regId})</span>
+        </span>
+      ),
+    },
+    { key: "strength", header: "Evidence", hideBelow: "md", render: (s) => <span><Badge variant={strengthBadge[s.strength]}>{strengthWord[s.strength]}</Badge> <span className="text-ddg-muted">{s.reason}</span></span> },
+    { key: "by", header: "Decided", hideBelow: "sm", align: "right", render: (s) => <span className="whitespace-nowrap text-ddg-muted">{s.decidedBy ?? "unknown"}{s.decidedAt ? `, ${time(s.decidedAt)}` : ""}</span> },
+  ];
+
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-4">
       <div>
-        <Heading as="h1" size="lg">Possible duplicates</Heading>
-        <p className="mt-2 max-w-2xl text-sm text-ddg-muted">
-          Nothing is merged automatically. Linking means one admission for both tickets; the original rows stay as they are.
-        </p>
+        <Heading as="h1" size="md">Possible duplicates</Heading>
+        <p className="mt-1 text-sm text-ddg-muted">Nothing is merged automatically: linking gives both tickets one admission, and the original rows stay as they are.</p>
       </div>
 
-      {error && <p className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger-strong">{error}</p>}
+      {error && <p className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-strong">{error}</p>}
 
       {!data ? (
         <div className="flex justify-center py-10"><Spinner /></div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile value={data.counts.strong} label="Strong" tone="danger" hint="Same phone" size="sm" />
-            <StatTile value={data.counts.medium} label="Medium" tone="warn" hint="Name + email/company" size="sm" />
-            <StatTile value={data.counts.weak} label="Weak" tone="purple" hint="Shared email or name" size="sm" />
-            <StatTile value={data.counts.decided} label="Decided" tone="ok" size="sm" />
-          </div>
-
-          <section className="space-y-3">
-            <Heading size="sm">To review ({pending.length})</Heading>
+          <Section
+            title={`To review (${pending.length})`}
+            description={`${data.counts.strong} strong · ${data.counts.medium} medium · ${data.counts.weak} weak`}
+          >
             {pending.length === 0 ? (
-              <EmptyState title="All reviewed" detail="No open duplicate suggestions." />
-            ) : pending.map((s) => (
-              <Card key={s.id} accent={strengthAccent[s.strength]} as="article">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge variant={strengthBadge[s.strength]}>{s.strength}</Badge>
-                  <span className="text-sm">{s.reason}</span>
-                  {s.samePerson && <Badge variant="ok">Already linked</Badge>}
-                </div>
-                <Compare s={s} />
-                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Button variant="primary" fullWidth loading={busy === s.id + "confirmed"} disabled={!!busy}
-                    onClick={() => decide(s, "confirmed")}>Same person – link</Button>
-                  <Button variant="secondary" fullWidth loading={busy === s.id + "rejected"} disabled={!!busy}
-                    onClick={() => decide(s, "rejected")}>Different people</Button>
-                </div>
-              </Card>
-            ))}
-          </section>
+              <p className="text-sm text-ddg-muted">All reviewed. No open suggestions.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-ddg-line">
+                {pending.map((s) => (
+                  <article key={s.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 lg:flex-row lg:items-start lg:gap-4">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 lg:w-44 lg:flex-col lg:items-start">
+                      <Badge variant={strengthBadge[s.strength]}>{strengthWord[s.strength]}</Badge>
+                      <span className="text-sm text-ddg-muted">{s.reason}</span>
+                      {s.samePerson && <Badge variant="ok">Already linked</Badge>}
+                    </div>
+                    <div className="min-w-0 flex-1"><Compare s={s} /></div>
+                    <div className="flex shrink-0 gap-2 lg:w-44 lg:flex-col">
+                      <Button variant="primary" size="sm" fullWidth loading={busy === s.id + "confirmed"} disabled={!!busy}
+                        onClick={() => decide(s, "confirmed")}>Same person – link</Button>
+                      <Button variant="secondary" size="sm" fullWidth loading={busy === s.id + "rejected"} disabled={!!busy}
+                        onClick={() => decide(s, "rejected")}>Different people</Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </Section>
 
-          {decided.length > 0 && (
-            <section className="space-y-3">
-              <Heading size="sm">Decided ({decided.length})</Heading>
-              {decided.map((s) => (
-                <Card key={s.id} padding="sm" accent={s.decision === "confirmed" ? "ok" : "none"}>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <Badge variant={s.decision === "confirmed" ? "ok" : "neutral"}>
-                      {s.decision === "confirmed" ? "Linked" : "Different people"}
-                    </Badge>
-                    <span className="min-w-0 break-words">
-                      {s.a.firstName} {s.a.lastName} ({s.a.regId}) + {s.b.firstName} {s.b.lastName} ({s.b.regId})
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-ddg-muted">
-                    {s.strength} · {s.reason} · by {s.decidedBy ?? "unknown"}{s.decidedAt ? `, ${time(s.decidedAt)}` : ""}
-                  </p>
-                </Card>
-              ))}
-            </section>
-          )}
+          <Section title={`Decided (${decided.length})`}>
+            <Table columns={decidedColumns} rows={decided} rowKey={(s) => s.id} dense empty={<p className="text-sm text-ddg-muted">No decisions yet.</p>} />
+          </Section>
         </>
       )}
     </div>

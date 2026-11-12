@@ -40,10 +40,31 @@ export interface ExpectedPerson {
 
 export interface TypeCount { key: string; label: string; arrived: number; expected: number }
 
+/**
+ * People-level counts (one person = all confirmed-linked registrations). "Guests" excludes Internal, which is
+ * counted separately. Expected = status registered. Walk-ins are never mixed into guests.
+ */
+export interface ArrivalKpis {
+  /** Registered (eligible) non-internal people who are checked in. */
+  guestsIn: number;
+  guestsExpected: number;
+  vipsIn: number;
+  vipsExpected: number;
+  internalIn: number;
+  internalExpected: number;
+  walkinsApproved: number;
+  walkinsPending: number;
+  /** Active check-ins of cancelled / do-not-admit people (shown as exceptions, not in guestsIn). */
+  exceptions: number;
+}
+
 export interface ArrivalsData {
   feed: ArrivalItem[];
   byType: TypeCount[];
   counter: Awaited<ReturnType<typeof counter>>;
+  kpis: ArrivalKpis;
+  /** Active check-ins of people who are cancelled or do-not-admit (newest first). */
+  exceptions: ArrivalItem[];
   vipsExpected: ExpectedPerson[];
   notArrived: ExpectedPerson[];
   generatedAt: string;
@@ -142,15 +163,29 @@ export async function buildArrivals(store: Store): Promise<ArrivalsData> {
     { key: "partner", label: "Partners", test: (p) => p.primary.guestType === "Partner" },
     { key: "internal", label: "Internal", test: (p) => p.internal },
   ];
+  // Arrived is counted among eligible (registered) people only, so arrived <= expected always holds.
   const byType = tiles
     .map((t) => ({
       key: t.key, label: t.label,
-      arrived: people.filter((p) => t.test(p) && activeByPerson.has(p.personId)).length,
+      arrived: registered.filter((p) => t.test(p) && activeByPerson.has(p.personId)).length,
       expected: registered.filter(t.test).length,
     }))
     .filter((t) => t.expected > 0 || t.arrived > 0);
 
-  return { feed, byType, counter: count, vipsExpected, notArrived, generatedAt: new Date().toISOString() };
+  const guests = registered.filter((p) => !p.internal);
+  const internal = registered.filter((p) => p.internal);
+  const vips = registered.filter((p) => personBadges(p).includes("vip"));
+  const arrived = (list: PersonGroup[]) => list.filter((p) => activeByPerson.has(p.personId)).length;
+  const exceptions = feed.filter((f) => f.kind === "checkin" && f.override !== null);
+  const kpis: ArrivalKpis = {
+    guestsIn: arrived(guests), guestsExpected: guests.length,
+    vipsIn: arrived(vips), vipsExpected: vips.length,
+    internalIn: arrived(internal), internalExpected: internal.length,
+    walkinsApproved: count.walkinsApproved, walkinsPending: count.walkinsPending,
+    exceptions: exceptions.length,
+  };
+
+  return { feed, byType, counter: count, kpis, exceptions, vipsExpected, notArrived, generatedAt: new Date().toISOString() };
 }
 
 // ---------------------------------------------------------------- full guest records (manager)

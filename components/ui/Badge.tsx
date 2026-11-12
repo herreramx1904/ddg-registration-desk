@@ -35,13 +35,14 @@ const solidStyles: Record<BadgeVariant, string> = {
   brand: "bg-ddg-orange text-white ring-transparent",
 };
 
+/** Sentence-case status chip, 6px radius. sm = 12px text (manager), md = 14px (desk). */
 export function Badge({ children, variant = "neutral", solid = false, size = "sm", icon, className, title }: BadgeProps) {
   return (
     <span
       title={title}
       className={cx(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-full uppercase ring-1 ring-inset",
-        size === "sm" ? "px-2 py-0.5 text-[11px] tracking-wider" : "px-3 py-1 text-xs tracking-wider",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-md ring-1 ring-inset",
+        size === "sm" ? "h-5 px-1.5 text-xs" : "h-7 px-2.5 text-sm",
         solid ? solidStyles[variant] : soft[variant],
         className,
       )}

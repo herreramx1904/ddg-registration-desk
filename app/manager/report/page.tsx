@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, cx, Heading, Spinner, StatTile, useToast } from "@/components/ui";
+import { Button, Heading, Kpi, KpiRow, Section, Spinner, Table, useToast, type Column } from "@/components/ui";
 import type { ReportSummary } from "@/lib/service/report";
 import type { AuditRow } from "@/lib/server/store/types";
 
@@ -10,6 +10,8 @@ interface SummaryResponse {
   summary: ReportSummary;
   lines: { label: string; value: number; note?: string }[];
 }
+
+interface SheetRow { sheet: string; contains: string; count?: number }
 
 const fmt = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -62,63 +64,91 @@ export default function ReportPage() {
   if (!data) return <div className="grid place-items-center py-20"><Spinner size="lg" /></div>;
   const s = data.summary;
 
+  const sheets: SheetRow[] = [
+    { sheet: "Summary", contains: "The numbers below, one line each, with notes on how they are counted", count: data.lines.length },
+    { sheet: "Attended", contains: "Every guest with an active check-in: name, company, type, time, staff", count: s.attended + s.internalAttended },
+    { sheet: "No-shows", contains: "Registered guests who did not check in", count: s.noShows },
+    { sheet: "Walk-ins", contains: "Approved and rejected walk-ins with who decided and when", count: s.walkinsApproved + s.walkinsRejected },
+    { sheet: "Exceptions", contains: "Cancelled or do-not-admit guests who were admitted, and manager overrides", count: s.cancelledButAttended + s.managerOverrides },
+    { sheet: "Duplicates", contains: "Confirmed links (one person) and likely duplicates still unconfirmed", count: s.confirmedDuplicateLinks + s.likelyDuplicates },
+    { sheet: "Original rows", contains: "The client's list exactly as imported, unchanged" , count: s.registrations },
+  ];
+
+  const sheetColumns: Column<SheetRow>[] = [
+    {
+      key: "sheet", header: "Sheet", width: "10rem",
+      render: (r) => (
+        <span className="block min-w-0">
+          <span className="font-semibold text-ddg-ink">{r.sheet}</span>
+          <span className="block text-xs text-ddg-muted sm:hidden">{r.contains}</span>
+        </span>
+      ),
+    },
+    { key: "contains", header: "Contains", hideBelow: "sm", render: (r) => <span className="text-ddg-muted">{r.contains}</span> },
+    { key: "count", header: "Rows", align: "right", width: "5rem", render: (r) => <span className="tabular">{r.count ?? ""}</span> },
+  ];
+
+  const summaryColumns: Column<SummaryResponse["lines"][number]>[] = [
+    { key: "label", header: "Line", render: (l) => <span>{l.label}{l.note && <span className="block text-xs text-ddg-muted">{l.note}</span>}</span> },
+    { key: "value", header: "Value", align: "right", width: "6rem", render: (l) => <span className="tabular">{l.value}</span> },
+  ];
+
+  const auditColumns: Column<AuditRow>[] = [
+    { key: "at", header: "Time", width: "4.5rem", render: (e) => <span className="tabular text-ddg-muted">{fmt(e.at)}</span> },
+    { key: "staff", header: "Staff", render: (e) => <span>{e.staff} <span className="hidden text-ddg-muted sm:inline">({e.role})</span></span> },
+    {
+      key: "action", header: "Action",
+      render: (e) => (
+        <span className={e.action.includes("override") || e.action.includes("status") ? "font-mono text-xs text-danger-strong" : "font-mono text-xs text-ddg-ink"}>
+          {e.action}
+        </span>
+      ),
+    },
+    { key: "target", header: "Target", hideBelow: "sm", render: (e) => <span className="truncate text-ddg-muted">{e.target ?? ""}</span> },
+  ];
+
   return (
-    <div className="space-y-5">
-      <div>
-        <Heading as="h1" size="xl">Client report</Heading>
-        <p className="mt-1 text-sm text-ddg-muted">Live numbers, updated {fmt(data.generatedAt)}. We count people, not registrations.</p>
-      </div>
-
-      <Button size="xl" onClick={download} loading={downloading}>Download report (.xlsx)</Button>
-      <p className="-mt-3 text-center text-xs text-ddg-muted">
-        Summary · Attended · No-shows · Walk-ins · Exceptions · Duplicates · Original rows
-      </p>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile value={s.attended} total={s.expected} label="Attended" tone="ok" />
-        <StatTile value={s.noShows} label="No-shows" tone="warn" />
-        <StatTile value={s.walkinsApproved} label="Walk-ins approved" tone="purple" hint={`${s.walkinsRejected} rejected`} />
-        <StatTile value={s.totalInRoom} label="Total guests in" hint="Attended + walk-ins" />
-        <StatTile value={s.internalAttended} total={s.internalExpected} label="Internal staff" tone="purple" hint="Counted separately" />
-        <StatTile value={s.cancelledButAttended} label="Cancelled but attended" tone="warn" />
-        <StatTile value={s.managerOverrides} label="Manager overrides" tone="danger" />
-        <StatTile value={s.confirmedDuplicateLinks} label="Duplicates merged" hint={`${s.likelyDuplicates} likely, unconfirmed`} />
-      </div>
-
-      <Card padding="none">
-        <h2 className="px-4 pt-4 text-[11px] uppercase tracking-[0.16em] text-ddg-muted">Summary sheet</h2>
-        <dl className="mt-2 divide-y divide-ddg-line">
-          {data.lines.map((l) => (
-            <div key={l.label} className="flex items-baseline gap-3 px-4 py-2.5">
-              <dt className="min-w-0 flex-1">
-                <span className="text-sm">{l.label}</span>
-                {l.note && <span className="block text-xs text-ddg-muted">{l.note}</span>}
-              </dt>
-              <dd className="tabular text-xl">{l.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </Card>
-
-      <Card padding="none">
-        <h2 className="px-4 pt-4 text-[11px] uppercase tracking-[0.16em] text-ddg-muted">Audit log (latest 100)</h2>
-        <div className="mt-2 max-h-96 overflow-y-auto">
-          <ul className="divide-y divide-ddg-line text-sm">
-            {audit.map((e) => (
-              <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 px-4 py-2">
-                <span className="tabular w-12 shrink-0 text-ddg-muted">{fmt(e.at)}</span>
-                <span className={cx("font-mono text-[12px]", e.action.includes("override") || e.action.includes("status") ? "text-danger-strong" : "text-ddg-ink")}>
-                  {e.action}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-ddg-muted">
-                  {e.staff} ({e.role}){e.target ? ` · ${e.target}` : ""}
-                </span>
-              </li>
-            ))}
-            {audit.length === 0 && <li className="px-4 py-3 text-ddg-muted">Nothing logged yet.</li>}
-          </ul>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <Heading as="h1" size="md">Client report</Heading>
+          <p className="mt-1 text-sm text-ddg-muted">Live numbers, updated {fmt(data.generatedAt)}. People are counted once, not registrations.</p>
         </div>
-      </Card>
+        <Button onClick={download} loading={downloading}>Download report (.xlsx)</Button>
+      </div>
+
+      <KpiRow>
+        <Kpi label="Attended" value={s.attended} total={s.expected} tone="ok" hint="Excluding internal" />
+        <Kpi label="No-shows" value={s.noShows} tone="warn" />
+        <Kpi label="Walk-ins approved" value={s.walkinsApproved} tone="vip" hint={`${s.walkinsRejected} rejected`} />
+        <Kpi label="Total guests in" value={s.totalInRoom} hint="Incl. walk-ins" />
+        <Kpi label="Internal staff" value={s.internalAttended} total={s.internalExpected} hint="Counted apart" />
+        <Kpi label="Cancelled but in" value={s.cancelledButAttended} tone={s.cancelledButAttended > 0 ? "warn" : "neutral"} />
+        <Kpi label="Manager overrides" value={s.managerOverrides} tone={s.managerOverrides > 0 ? "danger" : "neutral"} />
+        <Kpi label="Duplicates linked" value={s.confirmedDuplicateLinks} hint={`${s.likelyDuplicates} likely`} />
+      </KpiRow>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="What the workbook contains" description="Seven sheets; the original rows are never changed.">
+          <Table columns={sheetColumns} rows={sheets} rowKey={(r) => r.sheet} dense />
+        </Section>
+        <Section title="Summary sheet">
+          <Table columns={summaryColumns} rows={data.lines} rowKey={(l) => l.label} dense />
+        </Section>
+      </div>
+
+      <Section title="Audit log" description="Latest 100 actions, newest first.">
+        <div className="max-h-[28rem] overflow-y-auto">
+          <Table
+            columns={auditColumns}
+            rows={audit}
+            rowKey={(e) => String(e.id)}
+            dense
+            stickyHeader
+            empty={<p className="text-sm text-ddg-muted">Nothing logged yet.</p>}
+          />
+        </div>
+      </Section>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 // Manager > Tickets (T7). Ticket links per guest: open, show QR, reissue, CSV export.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Badge, Button, Card, EmptyState, Heading, IconQr, Modal, SearchInput, Spinner, buttonClasses, useToast,
+  Badge, Button, Heading, IconQr, Modal, SearchInput, Spinner, Table, buttonClasses, useToast, type Column,
 } from "@/components/ui";
 import { QrCode } from "@/components/qr/QrCode";
 
@@ -26,7 +26,6 @@ const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 export default function TicketsPage() {
   const { toast } = useToast();
-  const [staff, setStaff] = useState<string | null>(null);
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -51,14 +50,6 @@ export default function TicketsPage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then(async (r) => {
-        if (!r.ok) { toLogin(); return; }
-        const me = (await r.json()) as { role?: string; staff?: string };
-        if (me.role !== "manager") { toLogin(); return; }
-        setStaff(me.staff ?? null);
-      })
-      .catch(() => {});
     const first = setTimeout(load, 0);
     const id = setInterval(load, 3000);
     return () => { clearTimeout(first); clearInterval(id); };
@@ -96,71 +87,76 @@ export default function TicketsPage() {
     }
   }
 
-  return (
-    <div>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <Heading as="h1" size="lg">Tickets</Heading>
-            <p className="mt-2 max-w-2xl text-sm text-ddg-muted">
-              Each guest gets a personal QR. The QR holds only a random code, no personal data. Send the links with your
-              mailing tool, or open a ticket here for the demo.
-            </p>
-          </div>
-          <a href="/api/manager/tickets?format=csv" className={buttonClasses("primary", "md")} download>
-            Download ticket links (CSV)
-          </a>
+  const columns: Column<Ticket>[] = [
+    {
+      key: "name", header: "Name",
+      render: (t) => (
+        <div className="min-w-0">
+          <p className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-ddg-ink">{t.firstName} {t.lastName}</span>
+            {t.guestType === "VIP" && <Badge variant="vip">VIP</Badge>}
+          </p>
+          <p className="truncate text-xs text-ddg-muted sm:hidden">{t.company ?? "No company"} · <span className="tabular">{t.regId}</span></p>
         </div>
+      ),
+    },
+    { key: "company", header: "Company", hideBelow: "sm", render: (t) => t.company ?? <span className="text-ddg-muted">No company</span> },
+    { key: "regId", header: "Reg ID", hideBelow: "sm", render: (t) => <span className="tabular">{t.regId}</span> },
+    {
+      key: "actions", header: <span className="sr-only">Actions</span>, align: "right",
+      render: (t) => (
+        <div className="flex flex-nowrap justify-end gap-1.5">
+          <span className="hidden sm:inline">
+            <a href={t.url} target="_blank" rel="noopener noreferrer" className={buttonClasses("secondary", "sm")}>Open</a>
+          </span>
+          <Button variant="secondary" size="sm" aria-label="Show QR" icon={<IconQr size={16} />} onClick={() => setShowQr(t)}>
+            <span className="hidden sm:inline">Show QR</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setConfirm(t)}>Reissue</Button>
+        </div>
+      ),
+    },
+  ];
 
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <Heading as="h1" size="md">Tickets</Heading>
+        <p className="mt-1 text-sm text-ddg-muted">
+          Each guest gets a personal QR holding only a random code, no personal data. Send the links with your mailing tool.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <SearchInput
           value={q}
           onValueChange={setQ}
           onClear={() => setQ("")}
+          size="sm"
           label="Search tickets"
           placeholder="Search name, company or Reg ID"
+          wrapperClassName="min-w-0 flex-1"
         />
-
-        {loadError && <p className="text-sm text-danger-strong" role="alert">{loadError}</p>}
-
-        {!tickets ? (
-          <div className="grid place-items-center py-16 text-ddg-orange"><Spinner size="lg" /></div>
-        ) : shown.length === 0 ? (
-          <EmptyState title={q ? "No guests match" : "No guests yet"} detail={q ? "Try another spelling." : "Import the guest list first."} />
-        ) : (
-          <>
-            <p className="tabular text-xs uppercase tracking-[0.14em] text-ddg-muted">
-              {shown.length} of {tickets.length} tickets
-            </p>
-            <ul className="flex flex-col gap-2">
-              {shown.map((t) => (
-                <li key={t.registrationId}>
-                  <Card padding="sm" className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="min-w-0 flex-1">
-                      <p className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-base text-ddg-ink">{t.firstName} {t.lastName}</span>
-                        {t.guestType === "VIP" && <Badge variant="vip">VIP</Badge>}
-                      </p>
-                      <p className="truncate text-sm text-ddg-muted">
-                        {t.company ?? "No company"}<span className="text-ddg-orange"> · </span>
-                        <span className="tabular">{t.regId}</span>
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <a href={t.url} target="_blank" rel="noopener noreferrer" className={buttonClasses("secondary", "sm")}>
-                        Open ticket
-                      </a>
-                      <Button variant="secondary" size="sm" icon={<IconQr size={16} />} onClick={() => setShowQr(t)}>
-                        Show QR
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setConfirm(t)}>Reissue</Button>
-                    </div>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+        <a href="/api/manager/tickets?format=csv" className={buttonClasses("secondary", "sm")} download>
+          Download ticket links (CSV)
+        </a>
       </div>
+
+      {loadError && <p className="text-sm text-danger-strong" role="alert">{loadError}</p>}
+
+      {!tickets ? (
+        <div className="grid place-items-center py-16 text-ddg-orange"><Spinner size="lg" /></div>
+      ) : (
+        <>
+          <p className="tabular text-xs text-ddg-muted">{shown.length} of {tickets.length} tickets</p>
+          <Table
+            columns={columns}
+            rows={shown}
+            rowKey={(t) => t.registrationId}
+            empty={<p className="text-sm text-ddg-muted">{q ? "No guests match. Try another spelling." : "No guests yet. Import the guest list first."}</p>}
+          />
+        </>
+      )}
 
       <Modal
         open={!!showQr}
@@ -172,10 +168,10 @@ export default function TicketsPage() {
       >
         {showQr && (
           <div className="flex flex-col items-center gap-3 pb-4">
-            <div className="rounded-2xl border-4 border-ddg-orange bg-white p-2">
-              <QrCode value={showQr.url} size={340} label={`Ticket QR for ${showQr.firstName}`} />
+            <div className="rounded-lg border border-ddg-line bg-white p-2">
+              <QrCode value={showQr.url} size={320} label={`Ticket QR for ${showQr.firstName}`} />
             </div>
-            <p className="tabular text-xs uppercase tracking-[0.14em] text-ddg-muted">Reg ID {showQr.regId}</p>
+            <p className="tabular text-sm text-ddg-muted">Reg ID {showQr.regId}</p>
           </div>
         )}
       </Modal>

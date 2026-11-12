@@ -5,9 +5,9 @@ import { cx } from "./cx";
 import { IconClose, IconSearch } from "./icons";
 
 const fieldBase =
-  "block w-full min-w-0 rounded-2xl border-2 border-ddg-line bg-white text-lg text-ddg-ink placeholder:text-ddg-muted/70 " +
+  "block w-full min-w-0 rounded-lg border border-ddg-line bg-white text-ddg-ink placeholder:text-ddg-muted/70 " +
   "transition-[border-color,box-shadow] duration-150 outline-none " +
-  "focus-visible:outline-none focus:border-ddg-orange focus:shadow-[0_0_0_4px_rgb(251_119_48/0.18)] " +
+  "focus-visible:outline-none focus:border-ddg-orange focus:shadow-[0_0_0_3px_rgb(251_119_48/0.18)] " +
   "disabled:bg-ddg-soft disabled:opacity-60";
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
@@ -16,20 +16,23 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   hint?: ReactNode;
   /** Error text under the field; also marks the field invalid. */
   error?: ReactNode;
+  /** "sm" = 40px (manager pages). Default "lg" = 56px (desk). */
+  size?: "sm" | "lg";
   ref?: Ref<HTMLInputElement>;
   /** Class for the outer wrapper. */
   wrapperClassName?: string;
 }
 
-/** Big (56px) text input with optional label, hint and error. */
-export function Input({ label, hint, error, id, className, wrapperClassName, ref, ...rest }: InputProps) {
+/** Text input with optional label, hint and error. */
+export function Input({ label, hint, error, size = "lg", id, className, wrapperClassName, ref, ...rest }: InputProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
   const msgId = `${inputId}-msg`;
+  const sm = size === "sm";
   return (
-    <div className={cx("flex flex-col gap-1.5", wrapperClassName)}>
+    <div className={cx("flex flex-col", sm ? "gap-1" : "gap-1.5", wrapperClassName)}>
       {label && (
-        <label htmlFor={inputId} className="text-xs uppercase tracking-[0.16em] text-ddg-ink">
+        <label htmlFor={inputId} className={cx("text-ddg-ink", sm ? "text-xs font-semibold" : "text-sm")}>
           {label}
         </label>
       )}
@@ -38,11 +41,16 @@ export function Input({ label, hint, error, id, className, wrapperClassName, ref
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={error || hint ? msgId : undefined}
-        className={cx(fieldBase, "h-14 px-4", !!error && "border-danger focus:border-danger", className)}
+        className={cx(
+          fieldBase,
+          sm ? "h-10 px-3 text-sm" : "h-14 px-4 text-lg",
+          !!error && "border-danger focus:border-danger",
+          className,
+        )}
         {...rest}
       />
       {(error || hint) && (
-        <p id={msgId} className={cx("text-sm", error ? "text-danger-strong" : "text-ddg-muted")}>
+        <p id={msgId} className={cx(sm ? "text-xs" : "text-sm", error ? "text-danger-strong" : "text-ddg-muted")}>
           {error || hint}
         </p>
       )}
@@ -58,6 +66,8 @@ export interface SearchInputProps
   onClear?: () => void;
   /** Accessible label (visually hidden). Default "Search guests". */
   label?: string;
+  /** "sm" = 40px (manager pages). Default "lg" = 64px (desk). */
+  size?: "sm" | "lg";
   ref?: Ref<HTMLInputElement>;
   /** Extra element inside the right edge, e.g. a QR button. */
   trailing?: ReactNode;
@@ -65,7 +75,7 @@ export interface SearchInputProps
 }
 
 /**
- * Big (64px) search field with icon and clear button. Controlled.
+ * Search field with icon and clear button. Controlled.
  * Works with USB barcode scanners (they type + Enter): handle Enter via onKeyDown or wrap in a <form>.
  */
 export function SearchInput({
@@ -74,6 +84,7 @@ export function SearchInput({
   onClear,
   label = "Search guests",
   placeholder = "Search name or company",
+  size = "lg",
   ref,
   trailing,
   className,
@@ -81,6 +92,7 @@ export function SearchInput({
   ...rest
 }: SearchInputProps) {
   const innerRef = useRef<HTMLInputElement | null>(null);
+  const sm = size === "sm";
   const setRefs = (el: HTMLInputElement | null) => {
     innerRef.current = el;
     if (typeof ref === "function") ref(el);
@@ -88,8 +100,13 @@ export function SearchInput({
   };
   return (
     <div className={cx("relative", wrapperClassName)}>
-      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ddg-orange">
-        <IconSearch size={24} />
+      <span
+        className={cx(
+          "pointer-events-none absolute top-1/2 -translate-y-1/2",
+          sm ? "left-2.5 text-ddg-muted" : "left-4 text-ddg-orange",
+        )}
+      >
+        <IconSearch size={sm ? 16 : 24} />
       </span>
       <input
         ref={setRefs}
@@ -106,13 +123,14 @@ export function SearchInput({
         onChange={(e) => onValueChange(e.target.value)}
         className={cx(
           fieldBase,
-          "h-16 pl-13 text-xl [&::-webkit-search-cancel-button]:hidden",
-          trailing ? "pr-28" : "pr-14",
+          "[&::-webkit-search-cancel-button]:hidden",
+          sm ? "h-10 pl-8 text-sm" : "h-16 pl-13 text-xl",
+          sm ? (trailing ? "pr-20" : "pr-9") : trailing ? "pr-28" : "pr-14",
           className,
         )}
         {...rest}
       />
-      <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+      <div className={cx("absolute top-1/2 flex -translate-y-1/2 items-center gap-1", sm ? "right-1" : "right-2")}>
         {value && (
           <button
             type="button"
@@ -122,9 +140,12 @@ export function SearchInput({
               onClear?.();
               innerRef.current?.focus();
             }}
-            className="grid size-11 place-items-center rounded-full text-ddg-muted hover:bg-ddg-soft hover:text-ddg-ink"
+            className={cx(
+              "grid place-items-center rounded-md text-ddg-muted hover:bg-ddg-soft hover:text-ddg-ink",
+              sm ? "size-7" : "size-11",
+            )}
           >
-            <IconClose size={22} />
+            <IconClose size={sm ? 16 : 22} />
           </button>
         )}
         {trailing}

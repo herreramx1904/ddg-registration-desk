@@ -53,12 +53,12 @@ export function AppShell({ area, staff, nav, actions, top, width = "narrow", chi
 
   return (
     <div className="flex min-h-dvh flex-col bg-ddg-soft">
-      <header className="sticky top-0 z-40 border-b border-ddg-line bg-white/90 backdrop-blur-md">
-        <div className={cx("mx-auto flex h-14 w-full items-center gap-3 px-4", container)}>
+      <header className="sticky top-0 z-40 border-b border-ddg-line bg-white">
+        <div className={cx("mx-auto flex h-12 w-full items-center gap-2.5 px-4", container)}>
           <Link href="/" aria-label="Home" className="shrink-0">
             <Logo variant="wordmark" size="sm" />
           </Link>
-          <span className="rounded-full bg-ddg-orange px-2.5 py-0.5 text-[11px] uppercase tracking-[0.16em] text-white">
+          <span className="rounded-md bg-ddg-orange px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-white">
             {area}
           </span>
           <div className="ml-auto flex min-w-0 items-center gap-2">
@@ -72,16 +72,17 @@ export function AppShell({ area, staff, nav, actions, top, width = "narrow", chi
               type="button"
               onClick={logout}
               disabled={loggingOut}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs uppercase tracking-wider text-ddg-ink hover:bg-ddg-soft disabled:opacity-50"
+              aria-label={loggingOut ? "Leaving" : "Log out"}
+              title="Log out"
+              className="grid size-9 shrink-0 place-items-center rounded-lg text-ddg-muted hover:bg-ddg-soft hover:text-ddg-ink disabled:opacity-50"
             >
               <IconLogout size={18} />
-              <span className="hidden sm:inline">{loggingOut ? "Leaving" : "Log out"}</span>
             </button>
           </div>
         </div>
         {nav && nav.length > 0 && (
           <nav className={cx("mx-auto w-full px-2", container)} aria-label="Sections">
-            <ul className="-mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <ul className="-mb-px flex gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {nav.map((n) => {
                 const isActive = n.href === active;
                 return (
@@ -90,7 +91,7 @@ export function AppShell({ area, staff, nav, actions, top, width = "narrow", chi
                       href={n.href}
                       aria-current={isActive ? "page" : undefined}
                       className={cx(
-                        "inline-flex h-11 items-center gap-1.5 border-b-[3px] px-3 text-xs uppercase tracking-[0.14em] transition-colors",
+                        "inline-flex h-10 items-center gap-1.5 border-b-2 px-3 text-sm transition-colors",
                         isActive
                           ? "border-ddg-orange text-ddg-ink"
                           : "border-transparent text-ddg-muted hover:text-ddg-ink",
@@ -98,7 +99,7 @@ export function AppShell({ area, staff, nav, actions, top, width = "narrow", chi
                     >
                       {n.label}
                       {!!n.badge && (
-                        <span className="tabular grid min-w-5 place-items-center rounded-full bg-ddg-orange px-1.5 text-[10px] leading-5 text-white">
+                        <span className="tabular grid min-w-[18px] place-items-center rounded-full bg-ddg-orange px-1 text-[11px] leading-[18px] text-white">
                           {n.badge}
                         </span>
                       )}
@@ -111,11 +112,10 @@ export function AppShell({ area, staff, nav, actions, top, width = "narrow", chi
         )}
       </header>
       {top}
-      <main className={cx("mx-auto w-full flex-1 px-4 py-4 sm:py-6", container)}>{children}</main>
-      <footer className="border-t border-ddg-line bg-white">
-        <p className={cx("mx-auto w-full px-4 py-4 text-center text-[11px] uppercase tracking-[0.14em] text-ddg-muted", container)}>
-          Run by DDG Europe<span className="text-ddg-orange"> · </span>OrbitBot Galaxy
-          <span className="text-ddg-orange"> · </span>Kraftverket Oslo<span className="text-ddg-orange"> · </span>3 Dec 2026
+      <main className={cx("mx-auto w-full flex-1 px-4 py-4 sm:py-5", container)}>{children}</main>
+      <footer>
+        <p className={cx("mx-auto w-full px-4 py-4 text-center text-xs text-ddg-muted", container)}>
+          DDG Europe · OrbitBot Galaxy · Kraftverket Oslo · 3 Dec 2026
         </p>
       </footer>
     </div>

@@ -72,6 +72,21 @@ describe("arrivals", () => {
     expect(a.vipsExpected).toHaveLength(2);
   });
 
+  it("KPIs are people-level: internal separate, exceptions not in guestsIn, arrived never exceeds expected", async () => {
+    await checkIn(store, desk, { registrationId: ids[2], via: "qr" }); // VIP Ann
+    await checkIn(store, manager, { registrationId: ids[5], via: "manager", managerOverride: true }); // cancelled Dan
+    await checkIn(store, desk, { registrationId: ids[6], via: "search" }); // internal Eve
+    const a = await buildArrivals(store);
+    expect(a.kpis).toMatchObject({
+      guestsExpected: 3, guestsIn: 1, // Ann, Ben, Cat eligible; Dan cancelled, Eve internal
+      vipsIn: 1, vipsExpected: 2,
+      internalIn: 1, internalExpected: 1,
+      walkinsApproved: 0, walkinsPending: 0, exceptions: 1,
+    });
+    expect(a.exceptions.map((e) => e.name)).toEqual(["Dan Tester"]);
+    for (const t of a.byType) expect(t.arrived).toBeLessThanOrEqual(t.expected);
+  });
+
   it("manager records include raw, data flags, notes and suggestions", async () => {
     const guests = await listManagerGuests(store);
     const cat = guests.find((g) => g.regId === "T-4")!;

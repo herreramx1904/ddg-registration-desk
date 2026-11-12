@@ -13,3 +13,8 @@ export { Modal, Sheet, type ModalProps } from "./Modal";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export * from "./icons";
+export { Table, type TableProps, type Column } from "./Table";
+export { Kpi, KpiRow, type KpiProps } from "./Kpi";
+export { Drawer, type DrawerProps } from "./Drawer";
+export { FilterChips, type FilterChipsProps, type FilterChipOption } from "./FilterChips";
+export { Section, type SectionProps } from "./Section";

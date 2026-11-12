@@ -44,10 +44,10 @@ const tones: Record<ToastTone, string> = {
 };
 
 function ToastIcon({ tone }: { tone: ToastTone }) {
-  if (tone === "ok") return <IconCheck size={22} strokeWidth={3} />;
-  if (tone === "vip") return <IconStar size={22} />;
-  if (tone === "info") return <span className="size-2.5 rounded-full bg-ddg-orange" />;
-  return <IconAlert size={22} />;
+  if (tone === "ok") return <IconCheck size={18} strokeWidth={3} />;
+  if (tone === "vip") return <IconStar size={18} />;
+  if (tone === "info") return <span className="size-2 rounded-full bg-ddg-orange" />;
+  return <IconAlert size={18} />;
 }
 
 function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
@@ -62,16 +62,16 @@ function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
     <div
       role="status"
       className={cx(
-        "animate-toast-in pointer-events-auto flex w-full items-center gap-3 rounded-2xl p-3 pl-4 text-white shadow-ddg-lg",
+        "animate-toast-in pointer-events-auto flex w-full items-center gap-2.5 rounded-lg p-2.5 pl-3 text-white shadow-[0_4px_16px_-4px_rgb(68_68_68/0.35)]",
         tones[tone],
       )}
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/20">
+      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/20">
         <ToastIcon tone={tone} />
       </span>
       <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onDismiss(id)} aria-label="Dismiss">
-        <p className="ddg-heading truncate text-lg leading-tight">{item.title}</p>
-        {item.detail && <p className="truncate text-sm text-white/90">{item.detail}</p>}
+        <p className="truncate text-sm font-semibold leading-tight">{item.title}</p>
+        {item.detail && <p className="truncate text-xs text-white/90">{item.detail}</p>}
       </button>
       {item.action && (
         <button
@@ -80,7 +80,7 @@ function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
             item.action?.onClick();
             onDismiss(id);
           }}
-          className="h-11 shrink-0 rounded-xl bg-white px-4 text-sm uppercase tracking-wider text-ddg-ink active:scale-95"
+          className="h-8 shrink-0 rounded-md bg-white px-3 text-sm text-ddg-ink active:bg-ddg-soft"
         >
           {item.action.label}
         </button>
